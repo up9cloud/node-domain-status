@@ -55,13 +55,7 @@ const parseWhois = (domain, str, options = {
 }) => {
   let o = {}
   let domainKey = 'Domain Name'
-  if (options.lowercase) {
-    domainKey = domainKey.toLowerCase()
-  }
-  if (options.nested) {
-    domainKey = domainKey.replace(/ /g, '.')
-  }
-  _.set(o, domainKey, domain)
+  let domainKeyFound = false
 
   let isEndLine = false
   let endLinePrefix = '>>>'
@@ -73,6 +67,9 @@ const parseWhois = (domain, str, options = {
     let value = row.trim() // trim \r
     if (sepIndex > -1) {
       key = row.substr(0, sepIndex).trim()
+      if (key === domainKey) {
+        domainKeyFound = true
+      }
       value = row.substr(sepIndex + sep.length).trim()
       if (key.substr(0, endLinePrefix.length) === endLinePrefix) {
         isEndLine = true
@@ -100,6 +97,15 @@ const parseWhois = (domain, str, options = {
     if (isEndLine) {
       break
     }
+  }
+  if (!domainKeyFound) {
+    if (options.lowercase) {
+      domainKey = domainKey.toLowerCase()
+    }
+    if (options.nested) {
+      domainKey = domainKey.replace(/ /g, '.')
+    }
+    _.set(o, domainKey, domain)
   }
   return o
 }
@@ -244,12 +250,20 @@ yargs
       switch (method) {
         case 'http':
         case 'curl':
-          let res = await curl(domain)
-          console.log(JSON.stringify({
-            domain,
-            statusCode: res.statusCode,
-            method: res.req.method
-          }))
+          try {
+            let res = await curl(domain)
+            console.log(JSON.stringify({
+              domain,
+              statusCode: res.statusCode,
+              method: res.req.method
+            }))
+          } catch (e) {
+            console.error(JSON.stringify({
+              domain,
+              error: e.message
+            }))
+            throw e
+          }
           break
         case 'whois':
         default:
