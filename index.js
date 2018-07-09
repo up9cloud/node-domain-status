@@ -253,9 +253,19 @@ yargs
     describe: 'whois-server',
     type: 'string'
   })
+const options = yargs.argv
+const log = (...args) => {
+  if (options.verbose) {
+    console.log(...args)
+  }
+}
+const error = (...args) => {
+  if (options.verbose) {
+    console.error(...args)
+  }
+}
 
 ;(async () => {
-  const options = yargs.argv
   let list = []
   if (options.domain) {
     list = options.domain
@@ -298,9 +308,7 @@ yargs
 
   const runOnce = async (domain, method = 'whois', methodOptions, verbose) => {
     try {
-      if (verbose) {
-        console.log('[start]', domain)
-      }
+      log('[start]', domain)
       switch (method) {
         case 'http':
         case 'curl':
@@ -324,13 +332,9 @@ yargs
           let data = await whois(domain, methodOptions)
           console.log(JSON.stringify(parseWhois(domain, data)))
       }
-      if (verbose) {
-        console.log('[done]', domain)
-      }
+      log('[done]', domain)
     } catch (e) {
-      if (verbose) {
-        console.error('[fail]', domain, e.message)
-      }
+      error('[fail]', domain, e.message)
     }
   }
   const runAll = async (list) => {
@@ -353,15 +357,11 @@ yargs
           continue
         }
         if (!isValidDomain(domain)) {
-          if (options.verbose) {
-            console.log('[ignore]', domain)
-          }
+          log('[ignore]', domain)
           continue
         }
         if (excludeList.includes(domain)) {
-          if (options.verbose) {
-            console.log('[ignore]', domain)
-          }
+          log('[ignore]', domain)
           continue
         }
         jobs.push(runOnce(domain, options.method, whoisOptions, options.verbose))
@@ -376,10 +376,8 @@ yargs
 
   await runAll(list)
 
-  if (options.verbose) {
-    let used = process.memoryUsage()
-    for (let key in used) {
-      console.log('[mem]', `${key} ${Math.round(used[key] / 1024 / 1024 * 100) / 100} MB`)
-    }
+  let used = process.memoryUsage()
+  for (let key in used) {
+    log('[mem]', `${key} ${Math.round(used[key] / 1024 / 1024 * 100) / 100} MB`)
   }
 })()
