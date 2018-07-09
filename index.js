@@ -328,9 +328,27 @@ const error = (...args) => {
           }
           break
         case 'whois':
+          try {
+            let rawData = await whois(domain, methodOptions)
+            let data = parseWhois(domain, rawData)
+            if (
+              data.hasOwnProperty('DNSSEC') ||
+              data.hasOwnProperty('dnssec')
+            ) {
+              console.log(JSON.stringify(data))
+            } else {
+              console.error(JSON.stringify(data))
+            }
+          } catch (e) {
+            console.error(JSON.stringify({
+              domain,
+              error: e.message
+            }))
+            throw e
+          }
+          break
         default:
-          let data = await whois(domain, methodOptions)
-          console.log(JSON.stringify(parseWhois(domain, data)))
+          throw new Error('Invalid method')
       }
       log('[done]', domain)
     } catch (e) {
