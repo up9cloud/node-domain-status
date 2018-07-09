@@ -26,19 +26,34 @@ const curl = (hostname, options = {
   req.end()
 })
 
+const isValidDomainPart = domain => {
+  if (domain.startsWith('-')) {
+    return false
+  }
+  if (domain.endsWith('-')) {
+    return false
+  }
+  if (domain.indexOf('--') > -1) {
+    return false
+  }
+  return true
+}
+const isValidDomain = domain => {
+  let list = domain.split('.')
+  for (let part of list) {
+    if (!isValidDomainPart(part)) {
+      return false
+    }
+  }
+  return true
+}
 const extendWordList = (oldList, chars, suffix = '') => {
   let newList = []
   for (let v of oldList) {
     for (let c of chars) {
       let vv = v + c
       if (suffix !== '') { // the final
-        if (vv.startsWith('-')) {
-          continue
-        }
-        if (vv.endsWith('-')) {
-          continue
-        }
-        if (vv.indexOf('--') > -1) {
+        if (!isValidDomainPart(vv)) {
           continue
         }
         vv += suffix
@@ -352,6 +367,9 @@ yargs
           start = true
         }
         if (!start) {
+          continue
+        }
+        if (!isValidDomain(domain)) {
           continue
         }
         if (excludeList.includes(domain)) {
