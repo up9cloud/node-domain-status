@@ -339,7 +339,6 @@ yargs
         if (excludeList.includes(domain)) {
           continue
         }
-        console.log(domain)
         jobs.push(runOnce(domain, options.method, whoisOptions, options.verbose))
       }
       await Promise.all(jobs)
