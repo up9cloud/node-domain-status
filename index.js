@@ -133,7 +133,7 @@ const parseBulkJson = (str, mapCallback) => {
     } catch (e) {}
   }
 }
-const buildExcludeList = (str, domainKey) => {
+const buildDomainList = (str, domainKey) => {
   let list = []
   parseBulkJson(str, json => {
     if (json.hasOwnProperty(domainKey)) {
@@ -142,14 +142,14 @@ const buildExcludeList = (str, domainKey) => {
   })
   return list
 }
-const loadExcludeFile = async (path) => {
+const loadDomainJsonBulkFile = async (path) => {
   let str = await readFile(path, 'utf8')
-  return buildExcludeList(str, 'domain')
+  return buildDomainList(str, 'domain')
 }
-const loadExcludeFiles = async pathList => {
+const loadDomainJsonBulkFiles = async pathList => {
   let jobs = []
   for (let path of pathList) {
-    jobs.push(loadExcludeFile(path))
+    jobs.push(loadDomainJsonBulkFile(path))
   }
   let rawList = await Promise.all(jobs)
   return rawList.reduce((accumulator, list) => accumulator.concat(list), [])
@@ -177,6 +177,10 @@ yargs
   })
   .option('domain', {
     describe: 'domain',
+    type: 'array'
+  })
+  .option('domain-file', {
+    describe: 'domain-file',
     type: 'array'
   })
   .option('domain-from', {
@@ -234,6 +238,8 @@ yargs
   let list = []
   if (options.domain) {
     list = options.domain
+  } else if (options['domain-file']) {
+    list = await loadDomainJsonBulkFiles(options['domain-file'])
   } else {
     if (!options.chars) {
       let az = 'abcdefghijklmnopqrstuvwxyz'
@@ -336,7 +342,7 @@ yargs
     }
     let excludeList = []
     if (options['domain-exclude-file']) {
-      excludeList = await loadExcludeFiles(options['domain-exclude-file'])
+      excludeList = await loadDomainJsonBulkFiles(options['domain-exclude-file'])
     }
     let start = false
     const runBatch = async (list) => {
