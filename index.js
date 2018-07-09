@@ -84,9 +84,6 @@ const parseWhois = (domain, str, options = {
   nested: false
 }) => {
   let o = {}
-  let domainKey = 'Domain Name'
-  let domainKeyFound = false
-
   let isEndLine = false
   let endLinePrefix = '>>>'
   let sep = ':'
@@ -97,9 +94,6 @@ const parseWhois = (domain, str, options = {
     let value = row.trim() // trim \r
     if (sepIndex > -1) {
       key = row.substr(0, sepIndex).trim()
-      if (key === domainKey) {
-        domainKeyFound = true
-      }
       value = row.substr(sepIndex + sep.length).trim()
       if (key.substr(0, endLinePrefix.length) === endLinePrefix) {
         isEndLine = true
@@ -128,15 +122,7 @@ const parseWhois = (domain, str, options = {
       break
     }
   }
-  if (!domainKeyFound) {
-    if (options.lowercase) {
-      domainKey = domainKey.toLowerCase()
-    }
-    if (options.nested) {
-      domainKey = domainKey.replace(/ /g, '.')
-    }
-    _.set(o, domainKey, domain)
-  }
+  _.set(o, 'domain', domain)
   return o
 }
 const parseBulkJson = (str, mapCallback) => {
