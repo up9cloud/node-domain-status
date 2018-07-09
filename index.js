@@ -125,6 +125,26 @@ const parseWhois = (domain, str, options = {
   _.set(o, 'domain', domain)
   return o
 }
+const formatChars = (group) => {
+  let az = 'abcdefghijklmnopqrstuvwxyz'
+  let num = '0123456789'
+  switch (group) {
+    case 'a-z0-9-':
+      return az + num + '-'
+    case 'a-z0-9':
+      return az + num
+    case 'a-z-':
+      return az + '-'
+    case 'a-z':
+      return az
+    case '0-9-':
+      return num + '-'
+    case '0-9':
+      return num
+    default:
+      return group
+  }
+}
 const parseBulkJson = (str, mapCallback) => {
   for (let row of str.split('\n')) {
     row = row.trim()
@@ -243,30 +263,7 @@ yargs
     list = await loadDomainJsonBulkFiles(options['domain-file'])
   } else {
     if (!options.chars) {
-      let az = 'abcdefghijklmnopqrstuvwxyz'
-      let num = '0123456789'
-      switch (options['chars-group']) {
-        case 'a-z0-9-':
-          options.chars = az + num + '-'
-          break
-        case 'a-z0-9':
-          options.chars = az + num
-          break
-        case 'a-z-':
-          options.chars = az + '-'
-          break
-        case 'a-z':
-          options.chars = az
-          break
-        case '0-9-':
-          options.chars = num + '-'
-          break
-        case '0-9':
-          options.chars = num
-          break
-        default:
-          options.chars = options['chars-group']
-      }
+      options.chars = formatChars(options['chars-group'])
     }
     for (let suffix of options['domain-suffix']) {
       list = list.concat(buildWordList(options.chars, options.length, suffix))
@@ -356,9 +353,15 @@ yargs
           continue
         }
         if (!isValidDomain(domain)) {
+          if (options.verbose) {
+            console.log('[ignore]', domain)
+          }
           continue
         }
         if (excludeList.includes(domain)) {
+          if (options.verbose) {
+            console.log('[ignore]', domain)
+          }
           continue
         }
         jobs.push(runOnce(domain, options.method, whoisOptions, options.verbose))
