@@ -30,7 +30,19 @@ const extendWordList = (oldList, chars, suffix = '') => {
   let newList = []
   for (let v of oldList) {
     for (let c of chars) {
-      let vv = v + c + suffix
+      let vv = v + c
+      if (suffix !== '') { // the final
+        if (vv.startsWith('-')) {
+          continue
+        }
+        if (vv.endsWith('-')) {
+          continue
+        }
+        if (vv.indexOf('--') > -1) {
+          continue
+        }
+        vv += suffix
+      }
       newList.push(vv)
     }
   }
@@ -38,8 +50,8 @@ const extendWordList = (oldList, chars, suffix = '') => {
 }
 const buildWordList = (chars, length, suffix = '') => {
   switch (length) {
-    case 1:
-      return chars.split('').map(char => char + suffix)
+    case 0: return []
+    case 1: return chars.split('').map(char => char + suffix)
     default:
       let list = chars.split('')
       for (let i = 2; i <= length; i++) {
