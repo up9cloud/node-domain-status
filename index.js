@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+const fs = require('fs')
+const util = require('util')
+const readFile = util.promisify(fs.readFile)
 
 const yargs = require('yargs')
 const _ = require('lodash')
@@ -109,6 +112,36 @@ const parseWhois = (domain, str, options = {
   }
   return o
 }
+const parseBulkJson = (str, mapCallback) => {
+  for (let row of str.split('\n')) {
+    row = row.trim()
+    try {
+      let json = JSON.parse(row)
+      mapCallback(json)
+    } catch (e) {}
+  }
+}
+const buildExcludeList = (str, domainKey) => {
+  let list = []
+  parseBulkJson(str, json => {
+    if (json.hasOwnProperty(domainKey)) {
+      list.push(json[domainKey])
+    }
+  })
+  return list
+}
+const loadExcludeFile = async (path) => {
+  let str = await readFile(path, 'utf8')
+  return buildExcludeList(str, 'domain')
+}
+const loadExcludeFiles = async pathList => {
+  let jobs = []
+  for (let path of pathList) {
+    jobs.push(loadExcludeFile(path))
+  }
+  let rawList = await Promise.all(jobs)
+  return rawList.reduce((accumulator, list) => accumulator.concat(list), [])
+}
 
 yargs
   .usage('Usage: $0 [options]')
@@ -125,6 +158,7 @@ yargs
     type: 'string',
     default: 'whois',
     choices: [
+      'http',
       'curl',
       'whois'
     ]
@@ -133,9 +167,13 @@ yargs
     describe: 'domain',
     type: 'array'
   })
-  .options('domain-from', {
+  .option('domain-from', {
     describe: 'domain-from',
     type: 'string'
+  })
+  .option('domain-exclude-file', {
+    describe: 'domain-exclude',
+    type: 'array'
   })
   .option('domain-suffix', {
     describe: 'domain-suffix',
@@ -284,6 +322,10 @@ yargs
     if (options['domain-from']) {
       domainStartFrom = options['domain-from']
     }
+    let excludeList = []
+    if (options['domain-exclude-file']) {
+      excludeList = await loadExcludeFiles(options['domain-exclude-file'])
+    }
     let start = false
     const runBatch = async (list) => {
       let jobs = []
@@ -294,6 +336,10 @@ yargs
         if (!start) {
           continue
         }
+        if (excludeList.includes(domain)) {
+          continue
+        }
+        console.log(domain)
         jobs.push(runOnce(domain, options.method, whoisOptions, options.verbose))
       }
       await Promise.all(jobs)
