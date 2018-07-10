@@ -16,11 +16,15 @@ const whois = (domain, options) => {
 }
 const http = require('http')
 const curl = (hostname, options = {
-  method: 'head'
+  method: 'head',
+  timeout: 5000
 }) => new Promise((resolve, reject) => {
   let req = http.request({hostname, method: options.method}, res => {
     res.on('data', () => {}) // must set the 'data' event, otherwise won't resolve
     res.on('end', () => resolve(res))
+  })
+  req.setTimeout(options.timeout, function () {
+    req.abort()
   })
   req.on('error', reject)
   req.end()
@@ -355,7 +359,7 @@ const error = (...args) => {
       error('[fail]', domain, e.message)
     }
   }
-  const runAll = async (list) => {
+  const runAll = async list => {
     let domainStartFrom = list[0]
     if (options['domain-from']) {
       domainStartFrom = options['domain-from']
@@ -365,7 +369,7 @@ const error = (...args) => {
       excludeList = await loadDomainJsonBulkFiles(options['domain-exclude-file'])
     }
     let start = false
-    const runBatch = async (list) => {
+    const runBatch = async list => {
       let jobs = []
       for (let domain of list) {
         if (domainStartFrom && domain === domainStartFrom) {

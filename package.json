@@ -1,6 +1,6 @@
 {
   "name": "domain-status",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "batch checking domain status by whois",
   "main": "index.js",
   "bin" : {
