@@ -126,7 +126,6 @@ const parseWhois = (domain, str, options = {
       break
     }
   }
-  _.set(o, 'domain', domain)
   return o
 }
 const formatChars = (group) => {
@@ -335,9 +334,11 @@ const error = (...args) => {
           try {
             let rawData = await whois(domain, methodOptions)
             let data = parseWhois(domain, rawData)
+            _.set(data, 'domain', domain)
             if (
               data.hasOwnProperty('DNSSEC') ||
-              data.hasOwnProperty('dnssec')
+              data.hasOwnProperty('dnssec') ||
+              Object.keys(data).length > 5 + 1
             ) {
               console.log(JSON.stringify(data))
             } else {
