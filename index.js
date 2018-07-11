@@ -83,7 +83,7 @@ const buildWordList = (chars, length, suffix = '') => {
       return list
   }
 }
-const parseWhois = (domain, str, options = {
+const parseWhois = (str, options = {
   lowercase: false,
   nested: false
 }) => {
@@ -93,9 +93,13 @@ const parseWhois = (domain, str, options = {
   let sep = ':'
 
   for (let row of str.split('\n')) {
+    row = row.trim() // trim \r
+    if (row === '') {
+      continue
+    }
     let sepIndex = row.indexOf(sep)
     let key = ''
-    let value = row.trim() // trim \r
+    let value = ''
     if (sepIndex > -1) {
       key = row.substr(0, sepIndex).trim()
       value = row.substr(sepIndex + sep.length).trim()
@@ -111,6 +115,11 @@ const parseWhois = (domain, str, options = {
       if (options.nested) {
         key = key.replace(/ /g, '.')
       }
+    } else {
+      value = row
+    }
+    if (key === '' && value === '') {
+      continue
     }
     let v = _.get(o, key)
     if (v) {
@@ -333,7 +342,7 @@ const error = (...args) => {
         case 'whois':
           try {
             let rawData = await whois(domain, methodOptions)
-            let data = parseWhois(domain, rawData)
+            let data = parseWhois(rawData)
             _.set(data, 'domain', domain)
             if (
               data.hasOwnProperty('DNSSEC') ||
