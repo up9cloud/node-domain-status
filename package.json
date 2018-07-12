@@ -1,10 +1,10 @@
 {
   "name": "domain-status",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "description": "batch checking domain status by whois",
   "main": "index.js",
-  "bin" : {
-    "domain-status" : "./index.js"
+  "bin": {
+    "domain-status": "./index.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
