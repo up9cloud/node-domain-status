@@ -88,7 +88,7 @@ const parseWhois = (str, options = {
   nested: false
 }) => {
   let o = {}
-  let isEndLine = false
+  let isEnd = false
   let endLinePrefix = '>>>'
   let sep = ':'
 
@@ -100,20 +100,21 @@ const parseWhois = (str, options = {
     let sepIndex = row.indexOf(sep)
     let key = ''
     let value = ''
-    if (sepIndex > -1) {
+    if (!isEnd && sepIndex > -1) {
       key = row.substr(0, sepIndex).trim()
       value = row.substr(sepIndex + sep.length).trim()
       if (key.substr(0, endLinePrefix.length) === endLinePrefix) {
-        isEndLine = true
+        isEnd = true
 
         key = key.substr(endLinePrefix.length).trim()
         value = value.substr(0, value.length - '<<<'.length).trim()
-      }
-      if (options.lowercase) {
-        key = key.toLowerCase()
-      }
-      if (options.nested) {
-        key = key.replace(/ /g, '.')
+      } else {
+        if (options.lowercase) {
+          key = key.toLowerCase()
+        }
+        if (options.nested) {
+          key = key.replace(/ /g, '.')
+        }
       }
     } else {
       value = row
@@ -130,9 +131,6 @@ const parseWhois = (str, options = {
       _.set(o, key, v)
     } else {
       _.set(o, key, value)
-    }
-    if (isEndLine) {
-      break
     }
   }
   return o
