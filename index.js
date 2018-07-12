@@ -137,7 +137,7 @@ const parseWhois = (str, options = {
   }
   return o
 }
-const formatChars = (group) => {
+const keyToChars = (group) => {
   let az = 'abcdefghijklmnopqrstuvwxyz'
   let num = '0123456789'
   switch (group) {
@@ -208,6 +208,10 @@ yargs
       'whois'
     ]
   })
+  .option('domain-start-from', {
+    describe: 'domain-start-from',
+    type: 'string'
+  })
   .option('domain', {
     describe: 'domain',
     type: 'array'
@@ -216,10 +220,6 @@ yargs
     describe: 'domain-file',
     type: 'array'
   })
-  .option('domain-from', {
-    describe: 'domain-from',
-    type: 'string'
-  })
   .option('domain-exclude-file', {
     describe: 'domain-exclude',
     type: 'array'
@@ -227,7 +227,7 @@ yargs
   .option('domain-suffix', {
     describe: 'domain-suffix',
     type: 'array',
-    default: '.app'
+    default: ['.app']
   })
   .option('chars', {
     describe: 'chars',
@@ -236,15 +236,13 @@ yargs
   .option('chars-group', {
     describe: 'chars-group',
     type: 'string',
-    default: '0',
     choices: [
       'a-z0-9-',
       'a-z0-9',
       'a-z-',
       'a-z',
       '0-9-',
-      '0-9',
-      '0'
+      '0-9'
     ]
   })
   .option('length', {
@@ -279,26 +277,57 @@ const error = (...args) => {
 
 ;(async () => {
   let list = []
-  if (options.domain) {
-    list = options.domain
-  } else if (options['domain-file']) {
-    list = await loadDomainJsonBulkFiles(options['domain-file'])
-  } else {
-    if (!options.chars) {
-      options.chars = formatChars(options['chars-group'])
-    }
-    for (let suffix of options['domain-suffix']) {
-      list = list.concat(buildWordList(options.chars, options.length, suffix))
-    }
+  let domainFrom = null
+  switch (true) {
+    case (options.hasOwnProperty('domain')):
+      list = options.domain
+      domainFrom = 'domain'
+      break
+    case (options.hasOwnProperty('domain-file')):
+      list = await loadDomainJsonBulkFiles(options['domain-file'])
+      domainFrom = 'file'
+      break
+    case (options.hasOwnProperty('chars-group')):
+      options.chars = keyToChars(options['chars-group'])
+      for (let suffix of options['domain-suffix']) {
+        list = list.concat(buildWordList(options.chars, options.length, suffix))
+      }
+      domainFrom = 'chars-group'
+      break
+    case (options.hasOwnProperty('chars')):
+      for (let suffix of options['domain-suffix']) {
+        list = list.concat(buildWordList(options.chars, options.length, suffix))
+      }
+      domainFrom = 'chars'
+      break
   }
 
   let whoisOptions = {}
-  if (options['whois-server']) {
-    whoisOptions.server = options['whois-server']
-  } else if (options['domain-suffix'].includes('.app')) {
-    whoisOptions.server = 'whois.nic.google'
+  let source = [
+    'domain',
+    'file',
+    'chars-group',
+    'chars'
+  ]
+  switch (domainFrom) {
+    case 'domain':
+    case 'file':
+      if (options.hasOwnProperty('whois-server')) {
+        whoisOptions.server = options['whois-server']
+      }
+      break
+    case 'chars-group':
+    case 'chars':
+      if (options.hasOwnProperty('whois-server')) {
+        whoisOptions.server = options['whois-server']
+      } else if (options['domain-suffix'].includes('.app')) {
+        whoisOptions.server = 'whois.nic.google'
+      }
+      break
+    default:
+      throw new Error(`Invalid domain source, must from ${source.join(', ')}`)
   }
-  if (options.proxy) {
+  if (options.hasOwnProperty('proxy')) {
     let url = new URL(options.proxy)
     let allowedProtocol = [
       'socks5:',
@@ -318,7 +347,7 @@ const error = (...args) => {
     }
   }
 
-  const runOnce = async (domain, method = 'whois', methodOptions, verbose) => {
+  const runOnce = async (domain, method = 'whois', methodOptions) => {
     try {
       log('[start]', domain)
       switch (method) {
@@ -371,11 +400,11 @@ const error = (...args) => {
   }
   const runAll = async list => {
     let domainStartFrom = list[0]
-    if (options['domain-from']) {
-      domainStartFrom = options['domain-from']
+    if (options.hasOwnProperty('domain-start-from')) {
+      domainStartFrom = options['domain-start-from']
     }
     let excludeList = []
-    if (options['domain-exclude-file']) {
+    if (options.hasOwnProperty('domain-exclude-file')) {
       excludeList = await loadDomainJsonBulkFiles(options['domain-exclude-file'])
     }
     let start = false
