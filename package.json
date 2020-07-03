@@ -19,7 +19,7 @@
   "dependencies": {
     "lodash": "^4.17.10",
     "whois": "^2.6.0",
-    "yargs": "^12.0.1"
+    "yargs": "^15.4.0"
   },
   "engines": {
     "node": ">=8"
